@@ -1,0 +1,32 @@
+version: '3'
+services:
+   # MySQLを動かすコンテナ
+  db:
+    # Docker HubからMySQL5.7の公式イメージをダウンロードしてくる指定
+    image: mysql:5.7
+    # コンテナ内の環境変数を指定。環境変数を渡すとビルド時に設定してくれるDockerイメージがあるので、利用の際はDocker Hubのサイトで確認すると良い
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: line_bot_db
+      MYSQL_USER: line_bot_user
+      MYSQL_PASSWORD: line_bot_pass
+      TZ: 'Asia/Tokyo'
+    # 起動時のコマンド
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    # ディレクトリ同期。設定ファイルとMySQLのデータが保存される場所を同期している。コンテナは基本的に起動時に変更されてもコンテナ自体が止まるとデータが消えてしまうため、保存しておきたいものはホストマシンと同期しておく必要がある。
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+      - type: bind
+        source: "./mysql/my.cnf"
+        target: "/etc/my.cnf"    
+    ports:
+      - 3306:3306
+  web:
+    build: .
+    command: bundle exec rails s -p 3000 -b '0.0.0.0'
+    volumes:
+      - .:/myapp
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
